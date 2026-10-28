@@ -1,3 +1,11 @@
 spring:
   application:
     name: backend
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/statrecord
+    username: statrecord
+    password: 182875
