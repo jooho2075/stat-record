@@ -1,3 +1,10 @@
+---
+name: "🔧 Chore"
+about: 설정, 빌드, 패키지 등 유지보수 작업
+title: "[CHORE] "
+labels: chore
+assignees: ''
+---
 ## 📌 작업 설명
 
 ## 🛠 작업 내용

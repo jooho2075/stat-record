@@ -1,3 +1,10 @@
+---
+name: "♻️ Refactor"
+about: 코드 구조 개선
+title: "[REFACTOR] "
+labels: refactor
+assignees: ''
+---
 ## 🔎 리팩토링 대상
 
 ## 🎯 목적

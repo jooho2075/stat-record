@@ -1,3 +1,10 @@
+---
+name: "🐛 Bug"
+about: 버그 제보 및 수정
+title: "[BUG] "
+labels: bug
+assignees: ''
+---
 ## 🐞 문제 설명
 
 ## 🔄 재현 방법
