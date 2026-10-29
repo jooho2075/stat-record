@@ -129,10 +129,34 @@ cd backend
 - `backend/.gitignore`에 민감 정보 파일 제외 설정 추가
 
 **로컬 개발용 PostgreSQL 환경 구성** (#7)
-- Docker Compose로 PostgreSQL 17 컨테이너 구성
-- DB 접속 정보를 `.env`, `application-local.yml`로 분리
+- Docker Compose로 PostgreSQL 17 컨테이너 구성 (추후 AI 기능을 위해 pgvector 포함 이미지 사용)
+- DB 접속 정보를 `.env`, `application-local.yml`로 분리하여 커밋 제외
 - 로컬 프로필로 서버 실행 및 DB 연결 확인
 
+**README 작성**
+- 프로젝트 소개, 기술 스택, 로컬 실행 방법, 협업 규칙, 개발 일지 정리
+
+**Flyway 설정 및 초기 스키마 생성** (#9)
+- 운영 배포를 고려해 JPA 자동 생성 대신 Flyway로 스키마 버전 관리
+- `V1__init.sql`로 9개 테이블 생성
+  - 타석 결과 코드, 이닝(1~12), 역할, 경기 상태 등 CHECK 제약
+  - 공격 타석은 타자만, 수비 타석은 투수만 기록하도록 CHECK 제약
+  - 외래 키 조회용 인덱스 추가
+- JPA `ddl-auto`를 `validate`로 설정하여 엔티티와 스키마 불일치를 실행 시점에 검출
+
+**ERD 기반 JPA 엔티티 구현** (#11)
+- 공통 기반 클래스: `BaseTimeEntity`(생성·수정 시각), `BaseAuditEntity`(+ 작성자·수정자)
+- 9개 엔티티 및 enum 구현, 연관관계는 모두 `LAZY`로 설정
+- 도메인 규칙을 엔티티 메서드로 구현
+  - `Game.finish()`: 종료 이닝 범위 검증
+  - `Lineup.confirm()` / `unconfirm()`: 선수별 기록 확정 및 확정 해제
+  - `PlateAppearance.offense()` / `defense()`: 공격·수비 타석 생성 분리, 자책점 ≤ 실점 검증
+- 타석 결과 코드(`1B`, `2B` 등)는 Converter로 DB 값과 enum 매핑
+- 스키마 검증 과정에서 필드명 오타(`createBy`)를 실행 전에 발견·수정
+
+**검토 후 보류한 사항**
+- Gemini Code Assist PR 리뷰: 현재 Google Cloud 결제 계정 연결이 필수라 개인 프로젝트에서는 보류, 셀프 리뷰로 진행
+
 **다음 작업**
-- Gemini Code Assist 연결 (PR 코드 리뷰)
-- Flyway 기반 테이블 생성 및 JPA 엔티티 구현
+- Repository 구현 및 엔티티 저장·조회 테스트 작성
+- JPA Auditing 작성자 정보 처리 방식 결정
