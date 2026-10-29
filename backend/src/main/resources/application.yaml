@@ -3,7 +3,7 @@ spring:
     name: backend
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     open-in-view: false
   datasource:
     url: jdbc:postgresql://localhost:5432/statrecord
