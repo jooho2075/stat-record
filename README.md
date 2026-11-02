@@ -15,6 +15,7 @@
 | Backend | Java 17, Spring Boot 4.1.2, Spring Data JPA |
 | Database | PostgreSQL 17 (pgvector 포함 이미지) |
 | Infra | Docker, Docker Compose, AWS (예정) |
+| Test | JUnit 5, AssertJ, Testcontainers |
 
 <br>
 
@@ -160,3 +161,37 @@ cd backend
 **다음 작업**
 - Repository 구현 및 엔티티 저장·조회 테스트 작성
 - JPA Auditing 작성자 정보 처리 방식 결정
+
+  ### 2026.10.30 (금)
+
+  **엔티티 구조 문서 작성** (#13)
+  - 패키지 구조, 상속·연관관계 다이어그램(Mermaid), 설계 의도를 `docs/entity-structure.md`로 정리
+
+### 2026.11.02 (월)
+
+**Repository 구현 및 엔티티 저장·조회 테스트** (#15)
+- 9개 엔티티에 대한 Repository 구현 (`MemberRepository`에 로그인용 `findByEmail` 포함)
+- Testcontainers 기반 테스트 환경 구성
+  - 운영과 같은 `pgvector/pgvector:pg17` 이미지로 테스트용 PostgreSQL을 띄우고, `@ServiceConnection`으로 자동 연결
+  - 로컬 개발 DB와 분리되어 개발 데이터에 영향 없음
+  - `created_by`가 `member` 외래 키라서, 테스트에서 저장한 회원 id를 작성자로 지정하는 테스트용 Auditing 설정 추가
+- 테스트 10개 작성, 전체 통과
+  - Repository 테스트: Auditing 자동 입력, 타석 결과 코드 변환(`1B` ↔ `SINGLE`), 타석 순서 중복 시 저장 실패, 득점 기록 연결
+  - 도메인 테스트: 종료 이닝 범위, 기록 중복 확정 불가, 확정 해제, 자책점 ≤ 실점
+
+**테스트로 발견한 엔티티 버그 수정**
+- `BasedAuditEntity` → `BaseAuditEntity`: 파일명과 클래스명 불일치
+- `Game`이 `BaseTimeEntity`를 상속해 작성자 정보가 누락됨 → `BaseAuditEntity`로 수정
+- `BaseRunningEvent`가 공통 부모 클래스를 상속하지 않음
+- `Game.create()`에서 상대 팀 이름 대입 누락
+- `RunScored.create()`에서 주자 대입 누락
+- 모두 스키마 검증(`ddl-auto: validate`)으로는 잡히지 않고 **실제로 저장해야 드러나는 버그**였으며, 테스트 작성의 필요성을 확인함
+
+**개발 환경 이슈 해결**
+- 테스트 파일이 `src/main`에 생성되어 컴파일 실패 → `src/test`로 이동
+- IntelliJ가 Gradle 의존성을 인식하지 못하는 문제 → Invalidate Caches로 해결
+- Spring Boot 4부터 테스트 의존성이 기능별로 분리되고(`spring-boot-starter-data-jpa-test` 등), Testcontainers 모듈명에 `testcontainers-` 접두어가 붙은 점 반영
+
+**다음 작업**
+- Spring Security 기반 회원가입·로그인 구현
+- JPA Auditing 작성자 정보를 로그인한 회원 id로 연결
