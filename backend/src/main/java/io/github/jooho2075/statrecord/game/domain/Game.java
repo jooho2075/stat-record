@@ -1,6 +1,6 @@
 package io.github.jooho2075.statrecord.game.domain;
 
-import io.github.jooho2075.statrecord.global.entity.BaseTimeEntity;
+import io.github.jooho2075.statrecord.global.entity.BaseAuditEntity;
 import io.github.jooho2075.statrecord.team.domain.Team;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -14,7 +14,7 @@ import java.time.Instant;
 @Table(name = "game")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 
-public class Game extends BaseTimeEntity {
+public class Game extends BaseAuditEntity {
 
     private static final short DEFAULT_REGULATION_INNINGS = 9;
     private static final short MAX_INNING = 12;
@@ -45,6 +45,7 @@ public class Game extends BaseTimeEntity {
     public static Game create(Team team, String opponentName, Instant playedAt) {
         Game game = new Game();
         game.team = team;
+        game.opponentName = opponentName;
         game.playedAt = playedAt;
         game.regulationInnings = DEFAULT_REGULATION_INNINGS;
         game.status = GameStatus.IN_PROGRESS;

@@ -1,6 +1,6 @@
 package io.github.jooho2075.statrecord.game.domain;
 
-import io.github.jooho2075.statrecord.global.entity.BasedAuditEntity;
+import io.github.jooho2075.statrecord.global.entity.BaseAuditEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "run_scored")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RunScored extends BasedAuditEntity {
+public class RunScored extends BaseAuditEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,6 +26,7 @@ public class RunScored extends BasedAuditEntity {
     public static RunScored create(PlateAppearance plateAppearance, Lineup runner) {
         RunScored runScored = new RunScored();
         runScored.plateAppearance = plateAppearance;
+        runScored.runnerLineup = runner;
         return runScored;
     }
 }

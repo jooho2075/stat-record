@@ -1,6 +1,6 @@
 package io.github.jooho2075.statrecord.game.domain;
 
-import io.github.jooho2075.statrecord.global.entity.BasedAuditEntity;
+import io.github.jooho2075.statrecord.global.entity.BaseAuditEntity;
 import io.github.jooho2075.statrecord.team.domain.TeamMember;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -14,7 +14,7 @@ import java.time.Instant;
 @Table(name = "lineup")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 
-public class Lineup extends BasedAuditEntity {
+public class Lineup extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
