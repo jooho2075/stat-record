@@ -42,7 +42,7 @@ public class Notification {
         notification.type = type;
         notification.message = message;
         notification.relatedId = relatedId;
-        notification.readAt = Instant.now();
+        notification.createdAt = Instant.now();
         return notification;
     }
 
