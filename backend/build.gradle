@@ -45,6 +45,9 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Swaggeㄱ
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 }
 
 tasks.named('test') {
