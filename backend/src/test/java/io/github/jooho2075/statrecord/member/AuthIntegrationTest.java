@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -36,11 +37,13 @@ class AuthIntegrationTest {
     private static final String EMAIL = "player@test.com";
     private static final String PASSWORD = "password123!";
 
+    // ===== 회원가입·로그인 =====
+
     @Test
     @DisplayName("회원가입 후 로그인하면 받은 토큰으로 내 정보를 조회할 수 있다")
     void signupLoginAndGetMe() throws Exception {
         signup(EMAIL, PASSWORD);
-        String token = login(EMAIL, PASSWORD);
+        String token = loginAndGet(EMAIL, PASSWORD, "$.accessToken");
 
         mockMvc.perform(get("/api/v1/members/me")
                         .header("Authorization", "Bearer " + token))
@@ -112,6 +115,64 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
+    // ===== Refresh Token =====
+
+    @Test
+    @DisplayName("Refresh Token으로 새 토큰을 발급받으면 새 Access Token으로 API를 호출할 수 있다")
+    void refreshToken() throws Exception {
+        signup(EMAIL, PASSWORD);
+        String refreshToken = loginAndGet(EMAIL, PASSWORD, "$.refreshToken");
+
+        String response = refresh(refreshToken)
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String newAccessToken = JsonPath.read(response, "$.accessToken");
+        String newRefreshToken = JsonPath.read(response, "$.refreshToken");
+
+        assertThat(newRefreshToken).isNotEqualTo(refreshToken);
+        mockMvc.perform(get("/api/v1/members/me")
+                        .header("Authorization", "Bearer " + newAccessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("재발급에 한 번 사용한 Refresh Token은 다시 사용할 수 없다")
+    void refreshTokenRotation() throws Exception {
+        signup(EMAIL, PASSWORD);
+        String refreshToken = loginAndGet(EMAIL, PASSWORD, "$.refreshToken");
+        refresh(refreshToken).andExpect(status().isOk());
+
+        refresh(refreshToken)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    @DisplayName("로그아웃하면 Refresh Token으로 재발급할 수 없다")
+    void logout() throws Exception {
+        signup(EMAIL, PASSWORD);
+        String refreshToken = loginAndGet(EMAIL, PASSWORD, "$.refreshToken");
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(refreshBody(refreshToken)))
+                .andExpect(status().isNoContent());
+
+        refresh(refreshToken)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    @DisplayName("발급되지 않은 Refresh Token으로는 재발급할 수 없다")
+    void refreshWithUnknownToken() throws Exception {
+        refresh("unknown-refresh-token")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    // ===== 도우미 메서드 =====
+
     private void signup(String email, String password) throws Exception {
         mockMvc.perform(post("/api/v1/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,13 +180,20 @@ class AuthIntegrationTest {
                 .andExpect(status().isCreated());
     }
 
-    private String login(String email, String password) throws Exception {
+    /** 로그인 후 응답에서 원하는 값(accessToken, refreshToken)을 꺼냄 */
+    private String loginAndGet(String email, String password, String jsonPath) throws Exception {
         String response = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginBody(email, password)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(response, "$.accessToken");
+        return JsonPath.read(response, jsonPath);
+    }
+
+    private ResultActions refresh(String refreshToken) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(refreshBody(refreshToken)));
     }
 
     private String signupBody(String email, String password) {
@@ -138,5 +206,11 @@ class AuthIntegrationTest {
         return """
                 {"email": "%s", "password": "%s"}
                 """.formatted(email, password);
+    }
+
+    private String refreshBody(String refreshToken) {
+        return """
+                {"refreshToken": "%s"}
+                """.formatted(refreshToken);
     }
 }
