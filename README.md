@@ -13,7 +13,7 @@
 |---|---|
 | Frontend | Next.js, TypeScript (예정) |
 | Backend | Java 17, Spring Boot 4.1.2, Spring Data JPA |
-| Database | PostgreSQL 17 (pgvector 포함 이미지) |
+| Database | PostgreSQL 17 (pgvector 포함 이미지), Flyway, Redis |
 | Infra | Docker, Docker Compose, AWS (예정) |
 | Test | JUnit 5, AssertJ, Testcontainers |
 
@@ -195,3 +195,49 @@ cd backend
 **다음 작업**
 - Spring Security 기반 회원가입·로그인 구현
 - JPA Auditing 작성자 정보를 로그인한 회원 id로 연결
+
+### 2026.11.16 (월)
+
+**MVP API 명세 작성** (#17)
+- `docs/api-spec.md`: 공통 규칙(기본 경로, 인증, 에러 형식), 엔드포인트 목록, 주요 API 요청·응답, 권한 판단 기준 정리
+- 팀 가입 흐름 설계: 회원가입 시 소속팀 선택 → 감독 승인 → 팀원 등록 → 앱 내 알림
+  - 이름이 같은 팀을 구분할 수 있도록 팀 검색 결과에 감독 이름 표시
+  - 거절, 새 팀 생성 시 감독 지정, 가입 후 추가 신청까지 고려
+
+**팀 가입 신청 및 알림 테이블·엔티티 추가** (#19)
+- V2 마이그레이션: `team_join_request`, `notification` 테이블
+- 부분 UNIQUE 인덱스(`WHERE status = 'PENDING'`)로 대기 중인 신청만 중복을 막고, 거절 후 재신청은 허용
+- 테스트로 알림이 생성 즉시 "읽음" 상태가 되는 버그 발견·수정 (`createdAt` 대신 `readAt`에 시각 저장)
+
+**공통 예외 처리 및 Swagger 설정** (#21)
+- 모든 에러 응답을 `{ code, message }` 형식으로 통일 (`ErrorCode`, `BusinessException`, `GlobalExceptionHandler`)
+- 엔티티의 도메인 규칙 위반을 400·409로 변환, 예상하지 못한 에러는 내부 메시지를 숨기고 500으로 응답
+- 테스트 과정에서 **없는 URL 요청이 404가 아닌 500으로 응답되는 버그** 발견 → 404·405·JSON 형식 오류 별도 처리
+- springdoc-openapi로 Swagger 문서 자동화, Bearer 토큰 인증 스키마 등록
+
+**Spring Security 및 JWT Access Token 인증** (#23)
+- JWT는 별도 라이브러리 없이 Spring Security 내장 기능(OAuth2 Resource Server)으로 발급·검증
+- 세션 미사용(STATELESS), 회원가입·로그인·팀 검색·Swagger 외 모든 API는 인증 필요
+- 비밀번호 BCrypt 암호화, JWT 비밀 키는 `application-local.yml`로 분리하여 커밋 제외
+- JPA Auditing의 작성자 정보를 로그인한 회원 id로 연결
+- API: 회원가입, 로그인, 내 정보 조회 (`/members/me`)
+- 로그인 실패 시 이메일 존재 여부를 알 수 없도록 동일한 에러로 응답
+
+**Redis 기반 Refresh Token** (#25)
+- 저장소로 Redis 선택: TTL로 만료 토큰 자동 삭제, 이후 캐시 용도로도 활용 가능
+- Refresh Token은 JWT가 아닌 무작위 문자열, Redis에는 **SHA-256 해시만 저장**
+- **Refresh Token Rotation:** 재발급 시 기존 토큰 폐기 후 새 토큰 발급, `getAndDelete`로 동시 요청 시에도 한 번만 성공
+- API: 토큰 재발급(`/auth/refresh`), 로그아웃(`/auth/logout`)
+
+**테스트**
+- 전체 34개 통과 (Repository, 도메인 규칙, 예외 처리, 인증 통합 테스트)
+- 테스트 DB에 이어 Redis도 Testcontainers로 구성하여 로컬 환경과 분리
+
+**배운 점**
+- 테스트가 통과해도 **의도한 이유로 통과했는지** 확인이 필요함 (테스트용 Controller가 등록되지 않아 다른 이유로 통과하던 사례)
+- Spring Data의 메서드 이름 기반 쿼리는 대소문자까지 정확해야 함 (`existSByEmail` → `existsByEmail`)
+- DB의 `DEFAULT now()`는 Hibernate가 `null`을 명시적으로 보내면 적용되지 않음
+
+**다음 작업**
+- 회원가입 시 팀 가입 신청·팀 생성, 팀 검색, 가입 승인·거절 API
+- 앱 내 알림 조회 API
