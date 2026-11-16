@@ -9,3 +9,7 @@ spring:
     url: jdbc:postgresql://localhost:5432/statrecord
     username: statrecord
     password: 182875
+jwt:
+  issuer: stat-record
+  access-token-expiration: 30m
+  secret: KiCCnGuJtDAJaEEp1BfiKG4Ai0YSvbOycBtyG9t9TCs=

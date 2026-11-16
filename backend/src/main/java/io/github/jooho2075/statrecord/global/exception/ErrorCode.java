@@ -23,6 +23,8 @@ public enum ErrorCode {
     TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "팀을 찾을 수 없습니다."),
     NOT_TEAM_MANAGER(HttpStatus.FORBIDDEN, "팀 감독만 할 수 없습니다."),
     JOIN_REQUEST_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 가입 신청입니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
 
     // 경기 및 기록
     NOT_RECORD_OWNER(HttpStatus.FORBIDDEN, "본인 기록만 입력할 수 있습니다."),
